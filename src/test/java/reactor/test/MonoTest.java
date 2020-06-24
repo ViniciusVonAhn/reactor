@@ -2,7 +2,6 @@ package reactor.test;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
-import org.reactivestreams.Subscription;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -98,8 +97,32 @@ public class MonoTest {
         mono.subscribe(s -> log.info("Value {}", s), Throwable::printStackTrace,
                 () -> log.info("FINISHED!"));
         log.info("-------------------------");
-        //StepVerifier.create(mono)
-          //      .expectNext(name.toUpperCase())
-            //s    .verifyComplete();
+    }
+
+    @Test
+    public void monoDoOnError(){
+        Mono<Object> error = Mono.error(new IllegalArgumentException("Illegal argument message error!"))
+                .doOnError(e -> MonoTest.log.error("Error message: {}", e.getMessage()))
+                .log();
+
+        StepVerifier.create(error)
+                .expectError(IllegalArgumentException.class)
+                .verify();
+    }
+
+    @Test
+    public void monoDoOnErrorResume(){
+        String name = "Vinicius Von Ahn";
+        Mono<Object> error = Mono.error(new IllegalArgumentException("Illegal argument message error!"))
+                .doOnError(e -> MonoTest.log.error("Error message: {}", e.getMessage()))
+                .onErrorResume(e -> {
+                    log.info("Inside On Error Resume");
+                    return Mono.just(name);
+                })
+                .log();
+
+        StepVerifier.create(error)
+                .expectNext(name)
+                .verifyComplete();
     }
 }
